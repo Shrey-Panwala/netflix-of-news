@@ -1,0 +1,261 @@
+Great choice — **Problem Statement 8: AI-Native News Experience** is honestly one of the *highest potential winning tracks* in this hackathon if executed well. It directly aligns with GenAI strengths (personalization, multimodal generation, reasoning, agents).
+
+Let’s break everything down so you can **build a top-tier solution** 
+
+---
+
+#  Problem Statement 8 — Deep Breakdown
+
+From the official document :
+
+###  Core Problem
+
+News today is:
+
+* Static 
+* Same for everyone
+* Hard to consume (too many articles, no synthesis)
+
+ Your mission:
+Create a **completely new way to consume business news using AI**
+
+---
+
+#  What Winning Teams Will Actually Do
+
+Judges are NOT looking for:
+
+* Just a chatbot 
+* Just a summarizer 
+
+They want:
+
+* **AI-native experience**
+* **Personalization + interaction + intelligence**
+* Something users *can’t go back from*
+
+---
+
+#  High-Impact Solution Idea (STRONG WINNER DIRECTION)
+
+##  Build: **“MyET AI — Personal Financial Intelligence OS”**
+
+Instead of a news app → build a **thinking system for news**
+
+---
+
+##  Core Features (Combine Multiple Ideas = Winning Edge)
+
+### 1.  Hyper-Personalized News Brain
+
+> Not “recommended articles” — but **context-aware intelligence**
+
+* Input:
+
+  * User profile (student / investor / founder)
+  * Portfolio (stocks, interests)
+  * Behavior history
+
+* Output:
+
+  * “Today matters to YOU because…”
+  * “3 things affecting your portfolio”
+  * “1 opportunity you’re missing”
+
+ This aligns with:
+
+* *My ET — Personalized Newsroom*
+
+---
+
+### 2.  AI News Navigator (GAME CHANGER)
+
+> Replace 10 articles with ONE interactive intelligence doc
+
+User asks:
+
+* “What happened in Budget 2026?”
+
+AI gives:
+
+* Structured briefing:
+
+  * Summary
+  * Impact (stocks, sectors)
+  * Winners/losers
+  * Risks
+* Follow-up Q&A
+
+ This aligns with:
+
+* *News Navigator — Interactive Briefings*
+
+---
+
+### 3.  Auto AI Video Generator
+
+> Turn news → reels automatically
+
+* Input: Article
+* Output:
+
+  * 60-sec video
+  * Voice narration
+  * Graphs (stock moves, trends)
+
+ Judges LOVE this (high wow factor)
+
+---
+
+### 4.  Story Arc Tracker (VERY UNIQUE )
+
+> Track ongoing stories like Netflix series
+
+Example:
+
+* “Adani case”
+* “OpenAI vs Google AI race”
+
+Show:
+
+* Timeline
+* Key events
+* Sentiment graph
+* Predictions
+
+ This is a **differentiator feature**
+
+---
+
+### 5.  Vernacular Intelligence Engine
+
+> NOT translation — contextual explanation
+
+Example:
+
+* Hindi explanation of stock market news
+* Simplified for beginners
+
+ Huge impact for India
+
+---
+
+#  Suggested Architecture (IMPORTANT FOR JUDGING)
+
+### Multi-Agent System (this gives you points )
+
+Agents:
+
+1. **User Profiling Agent**
+2. **News Ingestion Agent**
+3. **Summarization + Reasoning Agent**
+4. **Personalization Engine**
+5. **Video Generation Agent**
+6. **Insight Generator Agent**
+7. **Conversational Agent**
+
+Flow:
+
+```
+News → Process → Understand → Personalize → Deliver → Interact
+```
+
+---
+
+#  Tech Stack (Winning Combo)
+
+### AI / ML
+
+* LLM: GPT / Claude / Llama
+* RAG (Retrieval Augmented Generation)
+* Embeddings (for personalization)
+
+### Backend
+
+* FastAPI / Node.js
+
+### Frontend
+
+* React (clean UI matters A LOT)
+
+### Data
+
+* News APIs (or ET scraped)
+* Stock APIs (optional boost)
+
+### Bonus (high impact)
+
+* LangChain / CrewAI (multi-agent system)
+* Vector DB (Pinecone / FAISS)
+
+---
+
+#  How to Stand Out (CRITICAL)
+
+## Judges Score Based On:
+
+### 1. Innovation
+
+ Combine:
+
+* Personalization + Interaction + Video + Insights
+
+### 2. Technical Depth
+
+ Show:
+
+* Multi-agent pipeline
+* RAG system
+* Real-time reasoning
+
+### 3. Feasibility
+
+ Make MVP WORK (don’t overpromise)
+
+### 4. Presentation
+
+ Storytelling matters:
+
+* “News is broken. We fixed it.”
+
+---
+
+#  Your Winning Strategy (Step-by-Step)
+
+### Phase 1 (Core MVP)
+
+* Personalized feed
+* AI briefing (chat-based)
+
+### Phase 2 (Differentiator)
+
+* Story tracking
+* Insight generation
+
+### Phase 3 (WOW Factor)
+
+* AI video generation
+
+---
+
+#  Killer Pitch Line (Use This)
+
+> “We are not building a news app — we are building an AI that *thinks for you before you read news*.”
+
+---
+
+#  If You Want, Next Step
+
+I can help you with:
+
+*  Full system architecture diagram
+*  Complete GitHub structure
+*  Exact prompts for LLM
+*  Pitch PPT (Gamma-ready)
+*  UI design (what to show judges)
+*  Demo script (VERY IMPORTANT)
+
+Just tell me:
+ *“Build full solution plan”* or
+ *“Give PPT prompt”* or
+ *“Give architecture + code structure”*

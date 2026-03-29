@@ -1,0 +1,39 @@
+
+# Environments
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Databases & Vector Stores
+faiss_index/
+*.db
+*.sqlite3
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Frontend
+node_modules/
+dist/
+.next/
+build/
+
+# Project Specific
+static/audio/*.mp3
+static/video/*.mp4
+backend/trace.txt
+backend/static/audio/
+backend/static/video/
+faiss_index/
+faiss_index_news/
+

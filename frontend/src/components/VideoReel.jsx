@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 
-export default function VideoReel({ apiBase }) {
+export default function VideoReel({ apiBase, user }) {
   const parsedApi = new URL(apiBase)
   const mediaBase = `${parsedApi.protocol}//${window.location.hostname}:${parsedApi.port}`
 
@@ -30,15 +30,27 @@ export default function VideoReel({ apiBase }) {
   useEffect(() => {
     async function fetchLatest() {
       try {
-        const r = await fetch(`${apiBase}/feed/personalized?limit=5`)
-        if (r.ok) {
+        const urls = user?.id
+          ? [
+              `${apiBase}/feed/personalized?limit=5&user_id=${user.id}`,
+              `${apiBase}/feed/personalized?limit=5`,
+            ]
+          : [`${apiBase}/feed/personalized?limit=5`]
+
+        for (const url of urls) {
+          const r = await fetch(url)
+          if (!r.ok) continue
           const data = await r.json()
-          setLatestArticles(data.articles || [])
+          const articles = data.articles || []
+          if (articles.length > 0) {
+            setLatestArticles(articles)
+            return
+          }
         }
       } catch {}
     }
     fetchLatest()
-  }, [apiBase])
+  }, [apiBase, user?.id])
 
   useEffect(() => {
     if (!audioRef.current) return
@@ -66,8 +78,8 @@ export default function VideoReel({ apiBase }) {
     }
   }, [videoSrc])
 
-  async function generate() {
-    if (!title.trim()) { setError('Please enter a title'); return }
+  async function generate(payload = null) {
+    if (!payload && !title.trim()) { setError('Please enter a title'); return }
     setLoading(true); setError(''); setResult(null)
     setProgress('Generating AI script...')
     
@@ -84,10 +96,15 @@ export default function VideoReel({ apiBase }) {
     )
 
     try {
+      const requestPayload = payload || {
+        title: title.trim(),
+        content: content.trim() || title.trim(),
+      }
+
       const r = await fetch(`${apiBase}/video/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.trim(), content: content.trim() || title.trim() })
+        body: JSON.stringify(requestPayload)
       })
       if (r.ok) {
         const data = await r.json()
@@ -102,7 +119,7 @@ export default function VideoReel({ apiBase }) {
         setError(err.detail || 'Generation failed')
         setProgress('')
       }
-    } catch(e) {
+    } catch {
       setError('Connection error — is the backend running?')
       setProgress('')
     } finally {
@@ -111,11 +128,25 @@ export default function VideoReel({ apiBase }) {
     }
   }
 
-  function useArticle(article) {
+  function selectArticle(article) {
     setTitle(article.title || '')
     setContent(article.content || article.tldr || article.title || '')
     setResult(null)
     setError('')
+  }
+
+  function generateFromLiveArticle(article) {
+    if (!article?.id) {
+      selectArticle(article)
+      return
+    }
+
+    selectArticle(article)
+    generate({
+      article_id: article.id,
+      title: article.title || '',
+      content: article.content || article.tldr || article.title || '',
+    })
   }
 
   return (
@@ -126,19 +157,35 @@ export default function VideoReel({ apiBase }) {
           <div className="section-label" style={{color:'#2ecc71'}}>Generate from Latest News</div>
           <div style={{display:'flex',gap:8,overflowX:'auto',paddingBottom:6}}>
             {latestArticles.slice(0, 4).map((a, i) => (
-              <button key={i} onClick={() => useArticle(a)}
+              <div key={i}
                 style={{
-                  flexShrink:0, maxWidth:220, textAlign:'left', padding:'8px 12px',
+                  flexShrink:0, maxWidth:260, minWidth:220,
                   background:'var(--surface)', border:'1px solid var(--divider)',
-                  borderRadius:'var(--radius-sm)', cursor:'pointer', transition:'all 0.2s',
-                  fontSize:'0.7rem', lineHeight:1.4, color:'var(--text)',
+                  borderRadius:'var(--radius-sm)', padding:'8px 10px',
                 }}
-                onMouseEnter={e => { e.target.style.borderColor = 'var(--primary)'; e.target.style.background = 'var(--accent-soft)' }}
-                onMouseLeave={e => { e.target.style.borderColor = 'var(--divider)'; e.target.style.background = 'var(--surface)' }}
               >
-                <div style={{fontWeight:700,fontSize:'0.65rem',marginBottom:3}}>{a.title?.slice(0, 60)}{a.title?.length > 60 ? '...' : ''}</div>
-                <div style={{fontSize:'0.55rem',color:'var(--text-muted)'}}>{a.source}</div>
-              </button>
+                <button
+                  onClick={() => selectArticle(a)}
+                  style={{
+                    width:'100%', textAlign:'left', background:'transparent', border:'none', padding:0,
+                    cursor:'pointer', fontSize:'0.7rem', lineHeight:1.4, color:'var(--text)',
+                  }}
+                >
+                  <div style={{fontWeight:700,fontSize:'0.65rem',marginBottom:3}}>{a.title?.slice(0, 60)}{a.title?.length > 60 ? '...' : ''}</div>
+                  <div style={{fontSize:'0.55rem',color:'var(--text-muted)'}}>{a.source}</div>
+                </button>
+                <button
+                  onClick={() => generateFromLiveArticle(a)}
+                  disabled={loading}
+                  style={{
+                    marginTop:8, width:'100%', padding:'6px 8px', fontSize:'0.62rem', fontWeight:700,
+                    border:'1px solid var(--primary)', borderRadius:'6px', background:'var(--accent-soft)',
+                    color:'var(--primary)', cursor: loading ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  Generate Reel from Live News
+                </button>
+              </div>
             ))}
           </div>
         </div>

@@ -1,10 +1,36 @@
 from celery import Celery
 from app.core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def _resolve_celery_urls() -> tuple[str, str]:
+    broker = settings.CELERY_BROKER_URL or "memory://"
+    backend = settings.CELERY_RESULT_BACKEND or settings.REDIS_URL or "rpc://"
+
+    # Local dev fallback: keep API endpoints usable when Redis is not running.
+    if broker.startswith("redis://"):
+        try:
+            import redis
+
+            ping_url = settings.REDIS_URL or broker
+            client = redis.Redis.from_url(ping_url, socket_connect_timeout=2)
+            client.ping()
+        except Exception:
+            logger.warning("Redis is unavailable. Falling back to in-memory Celery broker for local runtime.")
+            broker = "memory://"
+            backend = "rpc://"
+
+    return broker, backend
+
+
+CELERY_BROKER, CELERY_BACKEND = _resolve_celery_urls()
 
 celery_app = Celery(
     "ai_news_tasks",
-    broker=settings.CELERY_BROKER_URL,
-    backend=settings.CELERY_RESULT_BACKEND
+    broker=CELERY_BROKER,
+    backend=CELERY_BACKEND,
 )
 
 celery_app.conf.update(

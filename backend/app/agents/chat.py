@@ -4,6 +4,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from app.agents.rag_engine import RAGEngine
 from app.core.config import settings
+from tenacity import RetryError
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +112,30 @@ class ConversationalNewsAgent:
         if user_id in self._user_memories:
             del self._user_memories[user_id]
 
+    def _fallback_extractive_response(
+        self,
+        history: List[Any],
+        question: str,
+        docs: List[Any],
+        intent: str,
+        sources: List[str],
+        source_details: List[Dict[str, Any]],
+        confidence: int,
+        error_label: str
+    ) -> Dict[str, Any]:
+        """Return a deterministic answer when LLM inference is unavailable."""
+        answer_text = self._build_extractive_answer(question, docs, intent)
+        history.append(HumanMessage(content=question))
+        history.append(AIMessage(content=answer_text))
+        return {
+            "answer": answer_text,
+            "sources": sources,
+            "source_details": source_details,
+            "confidence": confidence,
+            "reasoning": f"Extractive fallback mode ({error_label}).",
+            "intent": intent
+        }
+
     async def ask_question(self, user_id: int, question: str, user_preferences: list = None) -> Dict[str, Any]:
         """Process a query with Router Agent + Trust Layer + Personalization."""
         
@@ -212,9 +237,47 @@ class ConversationalNewsAgent:
             
             messages = [system_msg] + history[-6:] + [HumanMessage(content=question)]
             
-            # Step 6: Invoke LLM
-            response = await self.llm.ainvoke(messages)
-            answer_text = response.content.strip()
+            # Step 6: Invoke LLM (with graceful fallback on provider/rate-limit errors)
+            try:
+                response = await self.llm.ainvoke(messages)
+                answer_text = response.content.strip()
+            except RetryError as e:
+                logger.warning(f"LLM retry exhausted, using extractive fallback: {e}")
+                return self._fallback_extractive_response(
+                    history=history,
+                    question=question,
+                    docs=docs,
+                    intent=intent,
+                    sources=sources,
+                    source_details=source_details,
+                    confidence=confidence,
+                    error_label="provider retry limit"
+                )
+            except Exception as e:
+                err = str(e).lower()
+                if "rate limit" in err or "429" in err or "quota" in err or "tokens per day" in err:
+                    logger.warning(f"LLM rate-limited, using extractive fallback: {e}")
+                    return self._fallback_extractive_response(
+                        history=history,
+                        question=question,
+                        docs=docs,
+                        intent=intent,
+                        sources=sources,
+                        source_details=source_details,
+                        confidence=confidence,
+                        error_label="provider rate limit"
+                    )
+                logger.warning(f"LLM invocation failed, using extractive fallback: {e}")
+                return self._fallback_extractive_response(
+                    history=history,
+                    question=question,
+                    docs=docs,
+                    intent=intent,
+                    sources=sources,
+                    source_details=source_details,
+                    confidence=confidence,
+                    error_label="provider unavailable"
+                )
             
             # Clean up any "Reasoning:" the model might still add
             if "Reasoning:" in answer_text:

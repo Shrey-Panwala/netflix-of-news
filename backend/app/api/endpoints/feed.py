@@ -9,6 +9,7 @@ from app.agents.personalization import PersonalizationAgent
 from pydantic import BaseModel
 from typing import List, Optional
 import random
+import re
 
 router = APIRouter()
 
@@ -34,26 +35,36 @@ def _compute_relevance_score(article, user_preferences):
     """Compute a 0-100 relevance score based on how well the article matches user interests."""
     if not user_preferences:
         return 50  # Neutral score
-    
-    text = f"{article.category or ''} {article.title or ''} {article.content or ''} {article.source or ''}".lower()
-    
+
+    category_text = (article.category or "").lower()
+    title_text = (article.title or "").lower()
+    content_text = (article.content or "").lower()
+    source_text = (article.source or "").lower()
+    text = f"{category_text} {title_text} {content_text} {source_text}"
+
     total_matches = 0
-    matched_interests = []
-    
+    weighted_score = 0.0
+
     for pref in user_preferences:
         keywords = INTEREST_KEYWORD_MAP.get(pref, [pref.lower()])
+        best_weight = 0
         for kw in keywords:
-            if kw in text:
-                total_matches += 1
-                if pref not in matched_interests:
-                    matched_interests.append(pref)
-                break
-    
+            if kw in category_text:
+                best_weight = max(best_weight, 3)
+            elif kw in title_text:
+                best_weight = max(best_weight, 2)
+            elif kw in content_text or kw in source_text:
+                best_weight = max(best_weight, 1)
+        if best_weight > 0:
+            total_matches += 1
+            weighted_score += best_weight
+
     if total_matches == 0:
         return 10
-    
-    # Score: more matched interests = higher score
-    score = min(30 + total_matches * 20, 95)
+
+    # Coverage rewards how many interests were represented, weighted rewards stronger placements.
+    coverage = total_matches / max(len(user_preferences), 1)
+    score = min(20 + (coverage * 45) + (weighted_score * 8), 98)
     return score
 
 
@@ -168,7 +179,11 @@ async def get_public_feed(
         if user:
             user_preferences = user.preferences or []
 
-    articles = await _fetch_visible_articles(db, limit=limit, category=category)
+    # Personalization quality improves when we rerank a broader candidate window.
+    candidate_limit = limit
+    if user_preferences:
+        candidate_limit = max(limit * 5, 80)
+    articles = await _fetch_visible_articles(db, limit=candidate_limit, category=category)
 
     # Build response with relevance scoring
     response_articles = []
@@ -223,6 +238,9 @@ async def get_public_feed(
         top_items = [a for a in response_articles if a["relevance_score"] >= 70][:3]
         if top_items:
             await asyncio.gather(*(personalize_item(item) for item in top_items))
+
+    # Final response should respect requested limit after ranking/surprise injection.
+    response_articles = response_articles[:limit]
 
     return {
         "articles": response_articles,

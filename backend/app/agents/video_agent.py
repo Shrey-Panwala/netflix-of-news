@@ -219,13 +219,17 @@ class VideoGenerationAgent:
         return False
 
     def _generate_scene_image(self, topic: str, scene_label: str, scene_text: str, ts: int, idx: int) -> str:
-        """Generate scene-specific visuals with free text-to-image first, then robust fallbacks."""
+        """Generate scene-specific visuals with local-first strategy for reliable latency."""
         out_path = os.path.join(self.video_dir, f"bg_{ts}_{idx}.jpg")
         prompt = self._build_scene_prompt(topic, scene_label, scene_text)
         encoded_prompt = quote(prompt, safe="")
         query = self._extract_query_terms(topic, scene_text)
 
-        # 1) Free text-to-image provider (no API key required).
+        # 1) Local curated fallback first to keep endpoint latency stable.
+        if self._pick_local_image(topic, scene_label, scene_text, out_path):
+            return out_path
+
+        # 2) Free text-to-image provider (no API key required).
         ai_urls = [
             f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1280&height=720&model=flux&nologo=true&seed={ts + idx}",
             f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1280&height=720&nologo=true&seed={ts + idx}",
@@ -233,7 +237,7 @@ class VideoGenerationAgent:
         if self._download_from_urls(ai_urls, out_path, timeout=20):
             return out_path
 
-        # 2) Free stock image fallback to keep generation reliable in demos.
+        # 3) Free stock image fallback.
         web_urls = [
             f"https://source.unsplash.com/1600x900/?{query.replace(' ',',')},business,finance",
             f"https://source.unsplash.com/1600x900/?{topic.replace(' ',',')},economy,news",
@@ -241,7 +245,7 @@ class VideoGenerationAgent:
         if self._download_from_urls(web_urls, out_path, timeout=12):
             return out_path
 
-        # 3) Local curated fallback to guarantee a frame background.
+        # 4) Last safety fallback to guarantee a frame background.
         if self._pick_local_image(topic, scene_label, scene_text, out_path):
             return out_path
 
@@ -376,6 +380,29 @@ class VideoGenerationAgent:
         result["script"] = script
         return result
 
+    async def create_script_audio_preview(self, title: str, content: str) -> Dict[str, Any]:
+        """Generate only script + TTS audio for async compile kickoff."""
+        if not gTTS:
+            return {"error": "gTTS is not installed for audio generation."}
+
+        script = await self._generate_script(title, content)
+        ts = int(time.time())
+        audio_path = os.path.join(self.audio_dir, f"reel_{ts}.mp3")
+
+        try:
+            tts = gTTS(text=script[:800], lang='en', slow=False)
+            tts.save(audio_path)
+        except Exception as e:
+            logger.error(f"Preview audio generation failed: {e}")
+            return {"error": f"Audio generation failed: {e}"}
+
+        return {
+            "script": script,
+            "audio_url": f"/static/audio/reel_{ts}.mp3",
+            "scene_count": 0,
+            "visual_mode": "script_audio_preview",
+        }
+
     async def _generate_script(self, title: str, content: str) -> str:
         """Generate a broadcast news script using Groq LLM, with a local fallback."""
         try:
@@ -470,9 +497,21 @@ class VideoGenerationAgent:
         self._draw_branding(draw, font_sm)
 
         # Center headline
-        wrapped = textwrap.wrap(headline, width=32)
+        wrapped = textwrap.wrap(headline, width=30)[:4]
         total_h = len(wrapped) * 56
         start_y = (HEIGHT - total_h) // 2 - 20
+
+        # Add a subtle panel behind the headline for stronger contrast and cleaner look.
+        panel_left = 170
+        panel_right = WIDTH - 430
+        panel_top = max(120, start_y - 28)
+        panel_bottom = min(HEIGHT - 190, start_y + total_h + 40)
+        draw.rectangle(
+            [panel_left, panel_top, panel_right, panel_bottom],
+            fill=(10, 16, 26, 168),
+            outline=(56, 72, 94),
+            width=2,
+        )
 
         for i, line in enumerate(wrapped):
             bbox = draw.textbbox((0, 0), line, font=font_lg)
@@ -485,7 +524,6 @@ class VideoGenerationAgent:
 
         # Bottom tag
         draw.text((MARGIN, HEIGHT - 60), "BREAKING NEWS ALERT", fill=ACCENT, font=font_sm)
-        self._draw_context_card(img, draw, bg_image)
         self._draw_anchor_panel(draw, font_sm, font_md)
 
         self._draw_progress_bar(draw, slide_idx, total_slides)
@@ -551,7 +589,6 @@ class VideoGenerationAgent:
         text3 = "ET Hackathon 2026"
         bbox3 = draw.textbbox((0, 0), text3, font=font_sm)
         draw.text(((WIDTH - bbox3[2] + bbox3[0]) // 2, HEIGHT // 2 + 55), text3, fill=DIM, font=font_sm)
-        self._draw_context_card(img, draw, bg_image)
         self._draw_anchor_panel(draw, font_sm, font_md)
 
         self._draw_progress_bar(draw, slide_idx, total_slides)

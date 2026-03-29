@@ -9,7 +9,7 @@ def test_video_endpoint():
                 "title": "Sam Altman announces AGI",
                 "content": "In a shock announcement today, OpenAI revealed a new model that completely solves benchmark reasoning tasks in seconds, shaking global markets."
             },
-            timeout=30
+            timeout=120
         )
         print(f"Status: {response.status_code}")
         

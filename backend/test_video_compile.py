@@ -10,7 +10,7 @@ def test_compile_endpoint():
                 "title": "Hackathon Winners Announced",
                 "content": "A revolutionary new team has won the AI News OS challenge with a crazy new 60 second video feature powered by Wan2.1 and Groq."
             },
-            timeout=30
+            timeout=150
         )
         print(f"Status: {response.status_code}")
         

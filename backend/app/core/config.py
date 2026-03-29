@@ -19,7 +19,11 @@ class Settings(BaseSettings):
     GROQ_API_KEY: Optional[str] = None
     
     # News APIs
+    NEWSAPI_KEY: Optional[str] = None
     NEWSDATA_API_KEY: Optional[str] = None
+
+    # Video generation
+    REPLICATE_API_TOKEN: Optional[str] = None
     
     # Environment config
     model_config = SettingsConfigDict(

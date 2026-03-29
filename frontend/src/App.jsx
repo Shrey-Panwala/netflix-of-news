@@ -184,7 +184,7 @@ export default function App() {
         <div className="sm-rule"></div>
         <span className="sm-tag">Script + Voiceover in 15 Seconds</span>
       </div>
-      <VideoReel apiBase={API} />
+      <VideoReel apiBase={API} user={user} />
 
       <div className="section-divider" />
 
